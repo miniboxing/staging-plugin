@@ -1,4 +1,5 @@
 import scala.reflect.runtime.universe._
+import scala.staged
 
 package object stagium {
 
@@ -14,6 +15,10 @@ package object stagium {
 
   def unstage[T](t: Exp[T])(implicit ttag: TypeTag[T], stager: Stager): T =
     stager.stage(t)
+
+  // TODO: Redirect this to the actual real unstage
+  def unstage[T](t: T @staged)(implicit ttag: TypeTag[T], stager: Stager): T =
+    t
 }
 
 package stagium {

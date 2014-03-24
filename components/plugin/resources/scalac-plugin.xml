@@ -1,4 +1,4 @@
 <plugin>
-  <name>valium</name>
-  <classname>valium.plugin.Valium</classname>
+  <name>stagium</name>
+  <classname>stagium.plugin.Stagium</classname>
 </plugin>
