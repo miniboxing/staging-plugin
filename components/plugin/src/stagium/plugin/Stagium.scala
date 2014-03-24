@@ -27,7 +27,10 @@ class Stagium(val global: Global) extends Plugin { plugin =>
 
   override def processOptions(options: List[String], error: String => Unit) {
     for (option <- options) {
-      error("Stagium: option not understood: " + option)
+      if (option == "passive")
+        helper.flag_passive = true
+      else
+        error("Stagium: option not understood: " + option)
     }
   }
 

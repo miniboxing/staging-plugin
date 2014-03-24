@@ -18,16 +18,17 @@ trait StagiumCoerceTreeTransformer {
   class CoercePhase(prev: Phase) extends StdPhase(prev) {
     override def name = StagiumCoerceTreeTransformer.this.phaseName
     override def checkable = false
-    def apply(unit: CompilationUnit): Unit = {
-      val tree = afterCoerce(new TreeAdapters().adapt(unit))
-      tree.foreach(node => if (!node.isInstanceOf[Import] && node.tpe == null) unit.error(node.pos, s"[stagium-coerce] tree not typed: $tree"))
-      def isFlapping(tree: Tree) = tree match {
-        case Unbox2box(Box2unbox(_)) => true
-        case Box2unbox(Unbox2box(_)) => true
-        case _ => false
+    def apply(unit: CompilationUnit): Unit =
+      if (!helper.flag_passive) {
+        val tree = afterCoerce(new TreeAdapters().adapt(unit))
+        tree.foreach(node => if (!node.isInstanceOf[Import] && node.tpe == null) unit.error(node.pos, s"[stagium-coerce] tree not typed: $tree"))
+        def isFlapping(tree: Tree) = tree match {
+          case Unbox2box(Box2unbox(_)) => true
+          case Box2unbox(Unbox2box(_)) => true
+          case _ => false
+        }
+        tree.collect{ case sub if isFlapping(sub) => unit.error(sub.pos, s"unexpected leftovers after coerce: $sub") }
       }
-      tree.collect{ case sub if isFlapping(sub) => unit.error(sub.pos, s"unexpected leftovers after coerce: $sub") }
-    }
   }
 
   class TreeAdapters extends Analyzer {

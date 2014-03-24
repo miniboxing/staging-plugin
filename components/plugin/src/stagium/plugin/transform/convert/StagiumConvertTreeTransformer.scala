@@ -17,7 +17,10 @@ trait StagiumConvertTreeTransformer {
   override def newTransformer(unit: CompilationUnit): Transformer = new Transformer {
     val stageTrans = new StagiumTreeTransformer(unit)
     override def transform(tree: Tree): Tree =
-      afterConvert(checkNoStorage(stageTrans.transform(tree)))
+      if (helper.flag_passive)
+        tree
+      else
+        afterConvert(checkNoStorage(stageTrans.transform(tree)))
   }
 
   def checkNoStorage(tree: Tree) = {

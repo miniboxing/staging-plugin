@@ -12,7 +12,10 @@ trait StagiumConvertInfoTransformer extends InfoTransform {
   import helper._
 
   override def transformInfo(sym: Symbol, tpe: Type): Type =
-    deepTransformation(tpe)
+    if (helper.flag_passive)
+      tpe
+    else
+      deepTransformation(tpe)
 
   lazy val deepTransformation: TypeMap = new TypeMap {
     def apply(tpe: Type): Type = mapOver(tpe)

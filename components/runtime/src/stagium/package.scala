@@ -13,11 +13,11 @@ package object stagium {
     sym
   }
 
-  def unstage_impl[T](t: Exp[T])(implicit ttag: TypeTag[T], stager: Stager): T =
+  def execute_impl[T](t: Exp[T])(implicit ttag: TypeTag[T], stager: Stager): T =
     stager.stage(t)
 
   // TODO: Redirect this to the actual real unstage
-  def unstage[T](t: T @staged)(implicit ttag: TypeTag[T], stager: Stager): T =
+  def execute[T](t: T @staged)(implicit ttag: TypeTag[T], stager: Stager): T =
     t
 }
 
