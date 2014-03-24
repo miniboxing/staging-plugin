@@ -14,8 +14,8 @@ trait StagiumDefs {
   lazy val ExpClass = rootMirror.getRequiredClass("stagium.Exp")
   lazy val ConClass = rootMirror.getRequiredClass("stagium.Con")
 
-  lazy val unstageInterface = getMember(StagiumPackage, TermName("unstage"))
-  lazy val unstageImplment  = getMember(StagiumPackage, TermName("unstage_impl"))
+  lazy val unstageInterface = getMember(StagiumPackage, TermName("execute"))
+  lazy val unstageImplment  = getMember(StagiumPackage, TermName("execute_impl"))
 
   // artificially created marker methods
   lazy val staged2direct =
