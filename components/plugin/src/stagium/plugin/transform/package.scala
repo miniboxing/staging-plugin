@@ -2,7 +2,8 @@ package stagium.plugin
 package transform
 
 import metadata._
-import verify._
+
+import prepare._
 import coerce._
 import convert._
 
@@ -56,11 +57,7 @@ trait StagiumConvertPhase extends
   override def newTransformer(unit: CompilationUnit): Transformer = new Transformer {
     override def transform(tree: Tree) = {
       // execute the tree transformer after all symbols have been processed
-      val tree1 = afterConvert(new TreeConverter(unit).transform(tree))
-      tree1.foreach(tree => if (tree.tpe == null && !tree.toString.contains("apply$mcV$sp")) unit.error(tree.pos, s"[stagium-convert] tree not typed: $tree"))
-      def isDisallowed(tree: Tree) = afterConvert(tree.symbol == box2unbox || tree.symbol == unbox2box || tree.symbol.isUnboxedStagiumRef || tree.isUnboxedStagiumRef)
-      tree1.collect{ case sub if isDisallowed(sub) => unit.error(sub.pos, s"unexpected leftovers after convert: $sub") }
-      tree1
+      tree
     }
   }
 }

@@ -18,7 +18,7 @@ trait StagiumAnnotationCheckers {
       assert(tpe1.withoutAnnotations <:< tpe2.withoutAnnotations)
       // we run localTyper during convert during code synthesis, and there we need `T @unboxed` and `Any` to be compatible again
       if (stagiumCoercePhase != null && global.phase.id == stagiumCoercePhase.id) {
-        tpe1.isUnboxedStagiumRef == tpe2.isUnboxedStagiumRef || tpe1.isWildcard || tpe2.isWildcard
+        tpe1.isStaged == tpe2.isStaged || tpe1.isWildcard || tpe2.isWildcard
       } else {
         true
       }

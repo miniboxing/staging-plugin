@@ -54,11 +54,11 @@ trait StagiumCoerceTreeTransformer {
       override protected def adapt(tree: Tree, mode: Mode, pt: Type, original: Tree = EmptyTree): Tree = {
         val oldTpe = tree.tpe
         val newTpe = pt
-        def typeMismatch = oldTpe.isUnboxedStagiumRef ^ newTpe.isUnboxedStagiumRef
+        def typeMismatch = oldTpe.isStaged ^ newTpe.isStaged
         def dontAdapt = tree.isType || pt.isWildcard
         if (typeMismatch && !dontAdapt) {
-          val conversion = if (oldTpe.isUnboxedStagiumRef) unbox2box else box2unbox
-          val convertee = if (oldTpe.typeSymbol.isBottomClass) gen.mkAttributedCast(tree, newTpe.toBoxedStagiumRef) else tree
+          val conversion = if (oldTpe.isStaged) unbox2box else box2unbox
+          val convertee = if (oldTpe.typeSymbol.isBottomClass) gen.mkAttributedCast(tree, newTpe.toDirect) else tree
           val tree1 = atPos(tree.pos)(Apply(gen.mkAttributedRef(conversion), List(convertee)))
           val tree2 = super.typed(tree1, mode, pt)
           assert(tree2.tpe != ErrorType, tree2)
@@ -83,20 +83,11 @@ trait StagiumCoerceTreeTransformer {
           case _ if tree.tpe == null =>
             fallback()
 
-          // intercept bm-s:
-          //  - it's a multi-param value class
-          //  - pt is marked with @unboxed
-          //  - is a b (=!isA(_))
-          case _ if pt.stagiumFields.length > 1 && pt.isUnboxedStagiumRef && !looksLikeA(tree) && tree.symbol != box2unbox =>
-            val tree2 = super.typed(tree.clearType(), mode, WildcardType)
-            super.typed(Apply(gen.mkAttributedRef(box2unbox), List(tree)), mode, pt)
-
           case Select(qual, meth) if qual.isTerm && tree.symbol.isMethod =>
-            
             val qual2 = super.typed(qual.clearType(), mode | QUALmode, WildcardType)
-            if (qual2.isUnboxedStagiumRef) {
-              val tpe2 = if (qual2.tpe.hasAnnotation(UnboxedClass)) qual2.tpe else qual2.tpe.widen
-              val tpe3 = tpe2.toBoxedStagiumRef
+            if (qual2.isStaged) {
+              val tpe2 = if (qual2.tpe.hasAnnotation(StagedClass)) qual2.tpe else qual2.tpe.widen
+              val tpe3 = tpe2.toDirect
               val qual3 = super.typed(qual.clearType(), mode, tpe3)
               super.typed(Select(qual3, meth) setSymbol tree.symbol, mode, pt)
             } else {
