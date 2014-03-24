@@ -53,11 +53,4 @@ trait StagiumConvertPhase extends
   def stagiumConvertPhase: StdPhase
   def afterConvert[T](op: => T): T = global.exitingPhase(stagiumConvertPhase)(op)
   def beforeConvert[T](op: => T): T = global.enteringPhase(stagiumConvertPhase)(op)
-
-  override def newTransformer(unit: CompilationUnit): Transformer = new Transformer {
-    override def transform(tree: Tree) = {
-      // execute the tree transformer after all symbols have been processed
-      tree
-    }
-  }
 }

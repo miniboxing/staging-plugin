@@ -17,8 +17,8 @@ trait StagiumConvertInfoTransformer extends InfoTransform {
   lazy val deepTransformation: TypeMap = new TypeMap {
     def apply(tpe: Type): Type = mapOver(tpe)
     override def mapOver(tpe: Type): Type = tpe match {
-      case tpe if tpe.isStaged =>
-        typeRef(NoPrefix, ExpClass, List(tpe))
+      case tpe if tpe != null && tpe.isStaged =>
+        appliedType(ExpClass, tpe.toDirect)
       case _ =>
         super.mapOver(tpe)
     }

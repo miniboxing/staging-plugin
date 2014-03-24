@@ -15,8 +15,8 @@ trait StagiumDefs {
   // artificially created marker methods
   lazy val staged2direct =
     newPolyMethod(1, ScalaPackageClass, newTermName("staged2direct"), 0L)(
-      tpar => (Some(List(tpar.head.tpeHK withAnnotation AnnotationInfo(StagedClass.tpe, Nil, Nil))), tpar.head.tpeHK))
+      tpar => (Some(List(tpar.head.tpeHK.toStaged)), tpar.head.tpeHK))
   lazy val direct2staged =
     newPolyMethod(1, ScalaPackageClass, newTermName("direct2staged"), 0L)(
-      tpar => (Some(List(tpar.head.tpeHK)), tpar.head.tpeHK withAnnotation AnnotationInfo(StagedClass.tpe, Nil, Nil)))
+      tpar => (Some(List(tpar.head.tpeHK)), tpar.head.tpeHK.toStaged))
 }

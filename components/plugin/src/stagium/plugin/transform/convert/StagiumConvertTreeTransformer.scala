@@ -2,6 +2,9 @@ package stagium.plugin
 package transform
 package convert
 
+import scala.tools.nsc.typechecker.Analyzer
+import scala.reflect.internal.Mode
+
 trait StagiumConvertTreeTransformer {
   this: StagiumConvertPhase =>
 
@@ -28,7 +31,7 @@ trait StagiumConvertTreeTransformer {
     new TypeMap {
       def apply(tp: Type): Type = mapOver(tp)
       override def mapOver(tp: Type): Type = tp match {
-        case _ if tp.isStaged =>
+        case _ if tp != null && tp.isStaged =>
           isStaged = true
           tp
         case _ =>
@@ -51,15 +54,15 @@ trait StagiumConvertTreeTransformer {
     }
   }
 
-  object MiniboxToBox extends CoercionExtractor {
-    def unapply(tree: Tree): Option[(Tree, Type)] = unapply(tree, marker_minibox2box)
+  object Staged2Direct extends CoercionExtractor {
+    def unapply(tree: Tree): Option[(Tree, Type)] = unapply(tree, staged2direct)
   }
 
-  object BoxToMinibox extends CoercionExtractor {
-    def unapply(tree: Tree): Option[(Tree, Type)] = unapply(tree, marker_box2minibox)
+  object Direct2Staged extends CoercionExtractor {
+    def unapply(tree: Tree): Option[(Tree, Type)] = unapply(tree, direct2staged)
   }
 
-  class MiniboxTreeTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+  class StagiumTreeTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 
     override def transform(tree0: Tree): Tree = {
       val oldTpe = tree0.tpe
@@ -73,103 +76,16 @@ trait StagiumConvertTreeTransformer {
       val tree1 =
         tree0 match {
 
-          // Array application
-          case BoxToMinibox(tree@Apply(apply @ Select(array, _), List(pos)), _) if apply.symbol == Array_apply =>
-            val tags = typeTagTrees(currentOwner)
-            val tree1 = array.tpe.widen.typeArgs match {
-              case tpe :: Nil if tags.isDefinedAt(tpe.typeSymbol) =>
-                val tag = tags(tpe.typeSymbol)
-                val tree1 = gen.mkMethodCall(mbarray_apply, List(transform(array), transform(pos), tag))
-                stats("rewrote array apply: " + tree + " ==> " + tree1)
-                tree1
-              case _ =>
-                super.transform(tree)
-            }
-            localTyper.typed(tree1)
-
-          // Array update
-          case tree@Apply(update@Select(array, _), List(pos, MiniboxToBox(element, _))) if update.symbol == Array_update =>
-            val tags = typeTagTrees(currentOwner)
-            val tree1 = array.tpe.widen.typeArgs match {
-              case tpe :: Nil if tags.isDefinedAt(tpe.typeSymbol) =>
-                val tag = tags(tpe.typeSymbol)
-                val tree2 = gen.mkMethodCall(mbarray_update, List(transform(array), transform(pos), transform(element), tag))
-                stats("rewrote array update: " + tree + " ==> " + tree2)
-                tree2
-              case _ =>
-                super.transform(tree)
-            }
-            localTyper.typed(tree1)
-
-           // Array new
-          case tree@Apply(newArray @ Select(manifest, _), List(size)) if newArray.symbol == Manifest_newArray =>
-            val tags = typeTagTrees(currentOwner)
-            val tree1 = manifest.tpe.widen.typeArgs match {
-              case tpe :: Nil if tags.isDefinedAt(tpe.typeSymbol) =>
-                val tag = tags(tpe.typeSymbol)
-                val tree1 = gen.mkMethodCall(mbarray_new, List(tpe), List(transform(size), tag))
-                stats("rewrote array new: " + tree + " ==> " + tree1)
-                tree1
-              case _ =>
-                super.transform(tree)
-            }
-            localTyper.typed(tree1)
-
-          // Array length
-          case tree@Apply(length @ Select(array, _), Nil) if length.symbol == Array_length =>
-            val tags = typeTagTrees(currentOwner)
-            val tree1 = array.tpe.widen.typeArgs match {
-              case tpe :: Nil if tags.isDefinedAt(tpe.typeSymbol) =>
-                val tag = tags(tpe.typeSymbol)
-                val tree1 = gen.mkMethodCall(mbarray_length, List(transform(array), tag))
-                stats("rewrote array length: " + tree + " ==> " + tree1)
-                tree1
-              case _ =>
-                super.transform(tree)
-            }
-            localTyper.typed(tree1)
-
-          // simplify equality between miniboxed values
-          case tree@Apply(Select(MiniboxToBox(val1, targ1), eqeq), List(MiniboxToBox(val2, targ2))) if tree.symbol == Any_== =>
-            val tags = typeTagTrees(currentOwner)
-            val tag1 = tags(targ1.dealiasWiden.typeSymbol)
-            val tag2 = tags(targ2.dealiasWiden.typeSymbol)
-            val tree1 = {
-              if ((tag1 == tag2) || (tag1.symbol == tag2.symbol))
-                gen.mkMethodCall(notag_==, List(transform(val1), transform(val2)))
-              else
-                gen.mkMethodCall(tag_==, List(transform(val1), tag1, transform(val2), tag2))
-            }
-            localTyper.typed(tree1)
-
-          // simplify equality between miniboxed values 2 - comparison with other values
-          case tree@Apply(Select(MiniboxToBox(val1, targ1), eqeq), List(arg)) if tree.symbol == Any_== =>
-            val tags = typeTagTrees(currentOwner)
-            val tag1 = tags(targ1.dealiasWiden.typeSymbol)
-            val tree1 = gen.mkMethodCall(other_==, List(transform(val1), tag1, transform(arg)))
-            localTyper.typed(tree1)
-
-          // simplify hashCode
-          case tree@Apply(Select(MiniboxToBox(val1, targ1), hash), _) if tree.symbol == Any_hashCode =>
-            val tags = typeTagTrees(currentOwner)
-            val tag1 = tags(targ1.dealiasWiden.typeSymbol)
-            val tree1 = gen.mkMethodCall(tag_hashCode, List(transform(val1), tag1))
-            localTyper.typed(tree1)
-
-          // simplify toString
-          case tree@Apply(Select(MiniboxToBox(val1, targ1), toString), _) if tree.symbol == Any_toString =>
-            val tags = typeTagTrees(currentOwner)
-            val tag1 = tags(targ1.dealiasWiden.typeSymbol)
-            val tree1 = gen.mkMethodCall(tag_toString, List(transform(val1), tag1))
-            localTyper.typed(tree1)
-
-          case BoxToMinibox(tree, targ) =>
-            val tags = minibox.typeTagTrees(currentOwner)
-            localTyper.typed(gen.mkMethodCall(box2minibox, List(targ), List(transform(tree), tags(targ.typeSymbol))))
-
-          case MiniboxToBox(tree, targ) =>
-            val tags = minibox.typeTagTrees(currentOwner)
-            localTyper.typed(gen.mkMethodCall(minibox2box, List(targ), List(transform(tree), tags(targ.typeSymbol))))
+          case Select(Staged2Direct(tree, targ), method0) =>
+            println(tree0)
+            val tree1 = transform(tree)
+            val staged = Ident(TermName("__staged"))
+            val method = TermName("infix_" + method0)
+            val infixm = Select(staged, method)
+            val infixa = Apply(infixm, List(tree1))
+            println(infixa)
+            localTyper.typedOperator(infixa)
+            //transform(tree)
 
           case _ =>
             super.transform(tree0)
@@ -178,4 +94,90 @@ trait StagiumConvertTreeTransformer {
       tree1.setType(newTpe)
     }
   }
+
+//    class ConvertPhase(prev: Phase) extends StdPhase(prev) {
+//    override def name = StagiumConvertTreeTransformer.this.phaseName
+//    override def checkable = false
+//    def apply(unit: CompilationUnit): Unit = {
+//      val tree = afterConvert(new TreeAdapters().adapt(unit))
+//      tree.foreach(node => if (!node.isInstanceOf[Import] && node.tpe == null) unit.error(node.pos, s"[stagium-coerce] tree not typed: $tree"))
+//      def isFlapping(tree: Tree) = tree match {
+//        case Unbox2box(Box2unbox(_)) => true
+//        case Box2unbox(Unbox2box(_)) => true
+//        case _ => false
+//      }
+//      tree.collect{ case sub if isFlapping(sub) => unit.error(sub.pos, s"unexpected leftovers after coerce: $sub") }
+//    }
+//  }
+//
+//  class TreeAdapters extends Analyzer {
+//    var indent = 0
+//    def adaptdbg(ind: Int, msg: => String): Unit = stagiumlog("  " * ind + msg)
+//
+//    lazy val global: StagiumConvertTreeTransformer.this.global.type = StagiumConvertTreeTransformer.this.global
+//    override def newTyper(context: Context): Typer = new TreeAdapter(context)
+//
+//    def adapt(unit: CompilationUnit): Tree = {
+//      val context = rootContext(unit)
+//      val checker = new TreeAdapter(context)
+//      unit.body = checker.typed(unit.body)
+//      unit.body
+//    }
+//
+//    class TreeAdapter(context0: Context) extends Typer(context0) {
+//      override protected def finishMethodSynthesis(templ: Template, clazz: Symbol, context: Context): Template =
+//        templ
+//
+//      def supertyped(tree: Tree, mode: Mode, pt: Type): Tree =
+//        super.typed(tree, mode, pt)
+//
+//      override protected def adapt(tree: Tree, mode: Mode, pt: Type, original: Tree = EmptyTree): Tree = {
+//        val oldTpe = tree.tpe
+//        val newTpe = pt
+//        def typeMismatch = oldTpe.isStaged ^ newTpe.isStaged
+//        def dontAdapt = tree.isType || pt.isWildcard
+//        if (typeMismatch && !dontAdapt) {
+//          val conversion = if (oldTpe.isStaged) staged2direct else direct2staged
+//          val convertee = if (oldTpe.typeSymbol.isBottomClass) gen.mkAttributedCast(tree, newTpe.toDirect) else tree
+//          val tree1 = atPos(tree.pos)(Apply(gen.mkAttributedRef(conversion), List(convertee)))
+//          val tree2 = super.typed(tree1, mode, pt)
+//          assert(tree2.tpe != ErrorType, tree2)
+//          tree2
+//        } else {
+//          super.adapt(tree, mode, pt, original)
+//        }
+//      }
+//
+//      override def typed(tree: Tree, mode: Mode, pt: Type): Tree = {
+//        val ind = indent
+//        indent += 1
+//        adaptdbg(ind, " <== " + tree + ": " + showRaw(pt, true, true, false, false))
+//
+//        def fallback() = super.typed(tree, mode, pt)
+//        def retypecheck() = super.typed(tree.clearType(), mode, pt)
+//
+//        val res = tree match {
+//          case EmptyTree | TypeTree() =>
+//            fallback()
+//
+//          case _ if tree.tpe == null =>
+//            fallback()
+//
+//          case Select(Staged2Direct(tree, targ), method) =>
+//            println(tree)
+//            val staged = Ident(TermName("__staged"))
+//            val infix  = Select(staged, TermName("infix_" + method))
+//            super.typed(tree)
+//
+//          case _ =>
+//            retypecheck()
+//        }
+//
+//        adaptdbg(ind, " ==> " + res + ": " + res.tpe)
+//        if (res.tpe == ErrorType) adaptdbg(ind, "ERRORS: " + context.errors)
+//        indent -= 1
+//        res
+//      }
+//    }
+//  }
 }
