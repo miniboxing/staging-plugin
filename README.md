@@ -1,0 +1,4 @@
+staging-plugin
+==============
+
+Project Stagium
