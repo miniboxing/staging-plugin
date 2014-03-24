@@ -110,6 +110,12 @@ trait StagiumConvertTreeTransformer {
             unit.error(tree0.pos, "There's no going back: " + tree0)
             tree0
 
+          case Apply(TypeApply(method, List(tpe)), List(exp, tag, stager)) if method.symbol == unstageInterface =>
+            val unstage = gen.mkAttributedIdent(unstageImplment)
+            val call = gen.mkMethodCall(unstage, List(tpe.tpe), List(transform(exp), tag, stager))
+            val tree2 = localTyper.typed(call)
+            tree2
+
           case _ =>
             super.transform(tree0)
         }

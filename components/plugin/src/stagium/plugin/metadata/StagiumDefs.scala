@@ -9,9 +9,13 @@ trait StagiumDefs {
   import definitions._
 
   lazy val StagedClass = rootMirror.getRequiredClass("scala.staged")
+  lazy val StagiumPackage = rootMirror.getPackage("stagium")
 
   lazy val ExpClass = rootMirror.getRequiredClass("stagium.Exp")
   lazy val ConClass = rootMirror.getRequiredClass("stagium.Con")
+
+  lazy val unstageInterface = getMember(StagiumPackage, TermName("unstage"))
+  lazy val unstageImplment  = getMember(StagiumPackage, TermName("unstage_impl"))
 
   // artificially created marker methods
   lazy val staged2direct =
