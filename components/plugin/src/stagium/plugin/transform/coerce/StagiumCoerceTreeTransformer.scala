@@ -20,7 +20,7 @@ trait StagiumCoerceTreeTransformer {
     override def checkable = false
     def apply(unit: CompilationUnit): Unit = {
       val tree = afterCoerce(new TreeAdapters().adapt(unit))
-      tree.foreach(node => if (node.tpe == null) unit.error(node.pos, s"[stagium-coerce] tree not typed: $tree"))
+      tree.foreach(node => if (!node.isInstanceOf[Import] && node.tpe == null) unit.error(node.pos, s"[stagium-coerce] tree not typed: $tree"))
       def isFlapping(tree: Tree) = tree match {
         case Unbox2box(Box2unbox(_)) => true
         case Box2unbox(Unbox2box(_)) => true
@@ -57,7 +57,7 @@ trait StagiumCoerceTreeTransformer {
         def typeMismatch = oldTpe.isStaged ^ newTpe.isStaged
         def dontAdapt = tree.isType || pt.isWildcard
         if (typeMismatch && !dontAdapt) {
-          val conversion = if (oldTpe.isStaged) unbox2box else box2unbox
+          val conversion = if (oldTpe.isStaged) staged2direct else direct2staged
           val convertee = if (oldTpe.typeSymbol.isBottomClass) gen.mkAttributedCast(tree, newTpe.toDirect) else tree
           val tree1 = atPos(tree.pos)(Apply(gen.mkAttributedRef(conversion), List(convertee)))
           val tree2 = super.typed(tree1, mode, pt)

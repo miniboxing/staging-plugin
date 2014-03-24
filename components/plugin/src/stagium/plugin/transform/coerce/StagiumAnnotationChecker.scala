@@ -22,5 +22,14 @@ trait StagiumAnnotationCheckers {
         true
       }
     }
+
+    override def annotationsLub(tp: Type, ts: List[Type]): Type =
+      if (ts.exists(_.isStaged))
+        tp.toStaged
+      else
+        tp.toDirect
+
+    override def annotationsGlb(tp: Type, ts: List[Type]): Type =
+      annotationsLub(tp, ts)
   }
 }

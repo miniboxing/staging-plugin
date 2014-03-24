@@ -32,7 +32,7 @@ trait StagiumPreparePhase extends
   }
 }
 
-/** Adds box2unbox and unbox2box coercions based on annotations injected during the previous phase */
+/** Adds direct2staged and staged2direct coercions based on annotations injected during the previous phase */
 trait StagiumCoercePhase extends
     StagiumPluginComponent
     with StagiumCoerceTreeTransformer

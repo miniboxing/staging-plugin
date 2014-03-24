@@ -27,14 +27,14 @@ trait StagiumInfo {
 
   object Unbox2box {
     def unapply(tree: Tree): Option[Tree] = tree match {
-      case Apply(_, arg :: Nil) if tree.symbol == unbox2box => Some(arg)
+      case Apply(_, arg :: Nil) if tree.symbol == staged2direct => Some(arg)
       case _ => None
     }
   }
 
   object Box2unbox {
     def unapply(tree: Tree): Option[Tree] = tree match {
-      case Apply(_, arg :: Nil) if tree.symbol == box2unbox => Some(arg)
+      case Apply(_, arg :: Nil) if tree.symbol == direct2staged => Some(arg)
       case _ => None
     }
   }
@@ -46,10 +46,10 @@ trait StagiumInfo {
     }
   }
 
-//  def box2unbox(tree: Tree): Tree = atPos(tree.pos)(Apply(gen.mkAttributedRef(box2unbox), List(tree)) setType tree.tpe.toStaged)
-//  def box2unbox(sym: Symbol): Tree = box2unbox(gen.mkAttributedRef(sym))
-//  def unbox2box(tree: Tree): Tree = atPos(tree.pos)(Apply(gen.mkAttributedRef(unbox2box), List(tree)) setType tree.tpe.toDirect)
-//  def unbox2box(tree: Tree, x: Symbol): Tree = atPos(tree.pos)(Selectx(unbox2box(tree), x))
-//  def unbox2box(sym: Symbol): Tree = unbox2box(gen.mkAttributedRef(sym))
-//  def unbox2box(sym: Symbol, x: Symbol): Tree = unbox2box(gen.mkAttributedRef(sym), x)
+//  def direct2staged(tree: Tree): Tree = atPos(tree.pos)(Apply(gen.mkAttributedRef(direct2staged), List(tree)) setType tree.tpe.toStaged)
+//  def direct2staged(sym: Symbol): Tree = direct2staged(gen.mkAttributedRef(sym))
+//  def staged2direct(tree: Tree): Tree = atPos(tree.pos)(Apply(gen.mkAttributedRef(staged2direct), List(tree)) setType tree.tpe.toDirect)
+//  def staged2direct(tree: Tree, x: Symbol): Tree = atPos(tree.pos)(Selectx(staged2direct(tree), x))
+//  def staged2direct(sym: Symbol): Tree = staged2direct(gen.mkAttributedRef(sym))
+//  def staged2direct(sym: Symbol, x: Symbol): Tree = staged2direct(gen.mkAttributedRef(sym), x)
 }

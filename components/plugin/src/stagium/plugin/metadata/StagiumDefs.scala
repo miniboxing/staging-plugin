@@ -10,11 +10,13 @@ trait StagiumDefs {
 
   lazy val StagedClass = rootMirror.getRequiredClass("scala.staged")
 
+  lazy val ExpClass = rootMirror.getRequiredClass("stagium.Exp")
+
   // artificially created marker methods
-  lazy val unbox2box =
-    newPolyMethod(1, ScalaPackageClass, newTermName("unbox2box"), 0L)(
+  lazy val staged2direct =
+    newPolyMethod(1, ScalaPackageClass, newTermName("staged2direct"), 0L)(
       tpar => (Some(List(tpar.head.tpeHK withAnnotation AnnotationInfo(StagedClass.tpe, Nil, Nil))), tpar.head.tpeHK))
-  lazy val box2unbox =
-    newPolyMethod(1, ScalaPackageClass, newTermName("box2unbox"), 0L)(
+  lazy val direct2staged =
+    newPolyMethod(1, ScalaPackageClass, newTermName("direct2staged"), 0L)(
       tpar => (Some(List(tpar.head.tpeHK)), tpar.head.tpeHK withAnnotation AnnotationInfo(StagedClass.tpe, Nil, Nil)))
 }
