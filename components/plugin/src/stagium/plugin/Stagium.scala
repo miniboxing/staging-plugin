@@ -15,12 +15,9 @@ class Stagium(val global: Global) extends Plugin { plugin =>
   val description = "provides value class functionality"
 
   val components = List[PluginComponent](
-    StagiumPreparePhaseObj,
-    StagiumVerifyPhaseObj,
-    StagiumInjectPhaseObj,
+//    StagiumPreparePhaseObj,
     StagiumCoercePhaseObj,
-    StagiumConvertPhaseObj,
-    StagiumAddExtensionMethodsPhaseObj
+    StagiumConvertPhaseObj
   )
 
   // LDL adaptation
@@ -34,58 +31,26 @@ class Stagium(val global: Global) extends Plugin { plugin =>
     }
   }
 
-  private object StagiumPreparePhaseObj extends StagiumPreparePhase { self =>
-    val global: Stagium.this.global.type = Stagium.this.global
-    val runsAfter = List("refchecks")
-    override val runsRightAfter = Some("specialize")
-    val phaseName = Stagium.this.name + "-prepare"
-
-    import global._
-    val helper: plugin.helper.type = plugin.helper
-
-    var stagiumPreparePhase : StdPhase = _
-    override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = {
-      stagiumPreparePhase = new Phase(prev)
-      stagiumPreparePhase
-    }
-  }
-
-  private object StagiumVerifyPhaseObj extends StagiumVerifyPhase { self =>
-    val global: Stagium.this.global.type = Stagium.this.global
-    val runsAfter = List()
-    override val runsRightAfter = Some(StagiumPreparePhaseObj.phaseName)
-    val phaseName = Stagium.this.name + "-verify"
-
-    import global._
-    val helper: plugin.helper.type = plugin.helper
-
-    var stagiumVerifyPhase : StdPhase = _
-    override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = {
-      stagiumVerifyPhase = new Phase(prev)
-      stagiumVerifyPhase
-    }
-  }
-
-  private object StagiumInjectPhaseObj extends StagiumInjectPhase { self =>
-    val global: Stagium.this.global.type = Stagium.this.global
-    val runsAfter = List()
-    override val runsRightAfter = Some(StagiumVerifyPhaseObj.phaseName)
-    val phaseName = Stagium.this.name + "-inject"
-
-    import global._
-    val helper: plugin.helper.type = plugin.helper
-
-    var stagiumInjectPhase : StdPhase = _
-    override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = {
-      stagiumInjectPhase = new Phase(prev)
-      stagiumInjectPhase
-    }
-  }
+//  private object StagiumPreparePhaseObj extends StagiumPreparePhase { self =>
+//    val global: Stagium.this.global.type = Stagium.this.global
+//    val runsAfter = List("refchecks")
+//    override val runsRightAfter = Some("specialize")
+//    val phaseName = Stagium.this.name + "-prepare"
+//
+//    import global._
+//    val helper: plugin.helper.type = plugin.helper
+//
+//    var stagiumPreparePhase : StdPhase = _
+//    override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = {
+//      stagiumPreparePhase = new Phase(prev)
+//      stagiumPreparePhase
+//    }
+//  }
 
   private object StagiumCoercePhaseObj extends StagiumCoercePhase { self =>
     val global: Stagium.this.global.type = Stagium.this.global
     val runsAfter = List()
-    override val runsRightAfter = Some(StagiumInjectPhaseObj.phaseName)
+    override val runsRightAfter = Some("typer")
     val phaseName = Stagium.this.name + "-coerce"
 
     import global._
@@ -111,22 +76,6 @@ class Stagium(val global: Global) extends Plugin { plugin =>
     override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = {
       stagiumConvertPhase = new Phase(prev)
       stagiumConvertPhase
-    }
-  }
-
-  private object StagiumAddExtensionMethodsPhaseObj extends StagiumAddExtensionMethodsPhase { self =>
-    val global: Stagium.this.global.type = Stagium.this.global
-    val runsAfter = List()
-    override val runsRightAfter = Some(StagiumConvertPhaseObj.phaseName)
-    val phaseName = Stagium.this.name + "-addext"
-
-    import global._
-    val helper: plugin.helper.type = plugin.helper
-
-    var stagiumAddExtPhase : StdPhase = _
-    override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = {
-      stagiumAddExtPhase = new Phase(prev)
-      stagiumAddExtPhase
     }
   }
 }
