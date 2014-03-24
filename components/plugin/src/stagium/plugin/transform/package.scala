@@ -1,0 +1,132 @@
+package stagium.plugin
+package transform
+
+import metadata._
+import verify._
+import inject._
+import coerce._
+import convert._
+import addext._
+
+/** Removes the known problems in the Scala ASTs that cause the plugin
+ *  to malfunction. For example: tailcall introduces .asInstancOf-s that
+ *  prevent proper transformation and thus crash in the backend. */
+trait StagiumPreparePhase extends
+    StagiumPluginComponent
+    with scala.tools.nsc.transform.Transform
+    with StagiumPrepareTreeTransformer { self =>
+  import global._
+  def stagiumPreparePhase: StdPhase
+  def afterPrepare[T](op: => T): T = global.exitingPhase(stagiumPreparePhase)(op)
+  def beforePrepare[T](op: => T): T = global.enteringPhase(stagiumPreparePhase)(op)
+
+  override def newTransformer(unit: CompilationUnit): Transformer = new Transformer {
+    override def transform(tree: Tree) = {
+      // [error] /Users/xeno_by/Projects/stagium/tests/correctness/test/stagium/partest/CompileTest.scala:30: [stagium-verify] tree not typed: $anonfun.this.apply$mcV$sp()
+      // [error]       Console.withErr(pa) {
+      // [error]                           ^
+      // [error] one error found
+      // TODO: I've no idea why this happens - looks like an invalid tree produced by scalac
+      tree.foreach(tree => if (tree.tpe == null && !tree.toString.contains("apply$mcV$sp")) unit.error(tree.pos, s"[stagium-verify] tree not typed: $tree"))
+      new TreePreparer(unit).transform(tree)
+    }
+  }
+}
+
+/** Makes sure that stagium class definitions satisfy certain preconditions. */
+trait StagiumVerifyPhase extends
+    StagiumPluginComponent
+    with scala.tools.nsc.transform.Transform
+    with StagiumVerifyTreeTransformer { self =>
+  import global._
+  def stagiumVerifyPhase: StdPhase
+  def afterVerify[T](op: => T): T = global.exitingPhase(stagiumVerifyPhase)(op)
+  def beforeVerify[T](op: => T): T = global.enteringPhase(stagiumVerifyPhase)(op)
+
+  override def newTransformer(unit: CompilationUnit): Transformer = new Transformer {
+    override def transform(tree: Tree) = {
+      // [error] /Users/xeno_by/Projects/stagium/tests/correctness/test/stagium/partest/CompileTest.scala:30: [stagium-verify] tree not typed: $anonfun.this.apply$mcV$sp()
+      // [error]       Console.withErr(pa) {
+      // [error]                           ^
+      // [error] one error found
+      // TODO: I've no idea why this happens - looks like an invalid tree produced by scalac
+      tree.foreach(tree => if (tree.tpe == null && !tree.toString.contains("apply$mcV$sp")) unit.error(tree.pos, s"[stagium-verify] tree not typed: $tree"))
+      new TreeVerifier(unit).traverse(tree)
+      tree
+    }
+  }
+}
+
+/** Transforms `C` to `C @value` where appropriate (arguments of methods, local and field values, returns types of 1-param stagium classes) */
+trait StagiumInjectPhase extends
+    StagiumPluginComponent
+    with StagiumInjectInfoTransformer
+    with StagiumInjectTreeTransformer { self =>
+  import global._
+  def stagiumInjectPhase: StdPhase
+  def afterInject[T](op: => T): T = global.exitingPhase(stagiumInjectPhase)(op)
+  def beforeInject[T](op: => T): T = global.enteringPhase(stagiumInjectPhase)(op)
+
+  override def newTransformer(unit: CompilationUnit): Transformer = new Transformer {
+    override def transform(tree: Tree) = {
+      // execute the tree transformer after all symbols have been processed
+      val tree1 = afterInject(new TreeInjector(unit).transform(tree))
+      tree1.foreach(tree => if (tree.tpe == null && !tree.toString.contains("apply$mcV$sp")) unit.error(tree.pos, s"[stagium-inject] tree not typed: $tree"))
+      tree1
+    }
+  }
+}
+
+/** Adds box2unbox and unbox2box coercions based on annotations injected during the previous phase */
+trait StagiumCoercePhase extends
+    StagiumPluginComponent
+    with StagiumCoerceTreeTransformer
+    with StagiumAnnotationCheckers { self =>
+  import global._
+  def stagiumCoercePhase: StdPhase
+  def afterCoerce[T](op: => T): T = global.exitingPhase(stagiumCoercePhase)(op)
+  def beforeCoerce[T](op: => T): T = global.enteringPhase(stagiumCoercePhase)(op)
+}
+
+/** Representation conversion phase `C @value -> fields` */
+trait StagiumConvertPhase extends
+    StagiumPluginComponent
+    with StagiumConvertInfoTransformer
+    with StagiumConvertTreeTransformer { self =>
+  import global._
+  import helper._
+  def stagiumConvertPhase: StdPhase
+  def afterConvert[T](op: => T): T = global.exitingPhase(stagiumConvertPhase)(op)
+  def beforeConvert[T](op: => T): T = global.enteringPhase(stagiumConvertPhase)(op)
+
+  override def newTransformer(unit: CompilationUnit): Transformer = new Transformer {
+    override def transform(tree: Tree) = {
+      // execute the tree transformer after all symbols have been processed
+      val tree1 = afterConvert(new TreeConverter(unit).transform(tree))
+      tree1.foreach(tree => if (tree.tpe == null && !tree.toString.contains("apply$mcV$sp")) unit.error(tree.pos, s"[stagium-convert] tree not typed: $tree"))
+      def isDisallowed(tree: Tree) = afterConvert(tree.symbol == box2unbox || tree.symbol == unbox2box || tree.symbol.isUnboxedStagiumRef || tree.isUnboxedStagiumRef)
+      tree1.collect{ case sub if isDisallowed(sub) => unit.error(sub.pos, s"unexpected leftovers after convert: $sub") }
+      tree1
+    }
+  }
+}
+
+/** Extension methods extractor */
+trait StagiumAddExtensionMethodsPhase extends
+    StagiumPluginComponent
+    with StagiumAddExtInfoTransformer
+    with StagiumAddExtTreeTransformer { self =>
+  import global._
+  def stagiumAddExtPhase: StdPhase
+  def afterAddExt[T](op: => T): T = global.exitingPhase(stagiumAddExtPhase)(op)
+  def beforeAddExt[T](op: => T): T = global.enteringPhase(stagiumAddExtPhase)(op)
+
+  override def newTransformer(unit: CompilationUnit): Transformer = new Transformer {
+    override def transform(tree: Tree) = {
+      // execute the tree transformer after all symbols have been processed
+      val tree1 = afterAddExt(new TreeTransformer(unit).transform(tree))
+      tree1.foreach(tree => if (tree.tpe == null && !tree.toString.contains("apply$mcV$sp")) unit.error(tree.pos, s"[stagium-addext] tree not typed: $tree"))
+      tree1
+    }
+  }
+}
