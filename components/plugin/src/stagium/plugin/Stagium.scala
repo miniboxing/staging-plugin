@@ -50,7 +50,7 @@ class Stagium(val global: Global) extends Plugin { plugin =>
   private object StagiumCoercePhaseObj extends StagiumCoercePhase { self =>
     val global: Stagium.this.global.type = Stagium.this.global
     val runsAfter = List()
-    override val runsRightAfter = Some("typer")
+    override val runsRightAfter = Some("uncurry")
     val phaseName = Stagium.this.name + "-coerce"
 
     import global._

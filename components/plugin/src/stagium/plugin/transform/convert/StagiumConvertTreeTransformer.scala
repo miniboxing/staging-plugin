@@ -76,16 +76,39 @@ trait StagiumConvertTreeTransformer {
       val tree1 =
         tree0 match {
 
-          case Select(Staged2Direct(tree, targ), method0) =>
-            println(tree0)
-            val tree1 = transform(tree)
+          // TODO: TypeApply
+          case Direct2Staged(Apply(Select(Staged2Direct(recv, targ), method0), args), _) =>
+            val recv1 = transform(recv)
             val staged = Ident(TermName("__staged"))
             val method = TermName("infix_" + method0)
             val infixm = Select(staged, method)
-            val infixa = Apply(infixm, List(tree1))
-            println(infixa)
-            localTyper.typedOperator(infixa)
+            val args2  = args.map((arg: Tree) => arg match {
+              case Staged2Direct(tree, targ) =>
+                tree
+              case tree =>
+                transform(direct2staged(tree))
+            }).map(transform)
+            val infixa = Apply(infixm, List(recv1) ::: args2)
+            val res = localTyper.typedOperator(infixa)
+            if (!(res.tpe <:< newTpe))
+              unit.error(tree0.pos, "Mismatching types: " + res.tpe + " <:< " + newTpe)
+            res
             //transform(tree)
+
+          case Direct2Staged(arg, tpe) =>
+//          I have trouble creating the tag, so for now I hardcoded stagium.Con to be of type Double :)
+//            val universe = localTyper.typedOperator(Select(Select(Select(Ident(TermName("scala")),TermName("reflect")),TermName("runtime")), TermName("universe")))
+//            val mirror = EmptyTree
+//            val tag = scala.reflect.reify.reifyType(global)(typer, universe, mirror, tpe, true)
+            val con0 = gen.mkMethodCall(gen.mkAttributedIdent(ConClass.companionModule), List(transform(arg)))
+            val con1 = localTyper.typed(con0)
+            if (!(con1.tpe <:< newTpe))
+              unit.error(tree0.pos, "Mismatching types: " + con1.tpe + " <:< " + newTpe)
+            con1
+
+          case Staged2Direct(_, _) =>
+            unit.error(tree0.pos, "There's no going back: " + tree0)
+            tree0
 
           case _ =>
             super.transform(tree0)
@@ -94,90 +117,4 @@ trait StagiumConvertTreeTransformer {
       tree1.setType(newTpe)
     }
   }
-
-//    class ConvertPhase(prev: Phase) extends StdPhase(prev) {
-//    override def name = StagiumConvertTreeTransformer.this.phaseName
-//    override def checkable = false
-//    def apply(unit: CompilationUnit): Unit = {
-//      val tree = afterConvert(new TreeAdapters().adapt(unit))
-//      tree.foreach(node => if (!node.isInstanceOf[Import] && node.tpe == null) unit.error(node.pos, s"[stagium-coerce] tree not typed: $tree"))
-//      def isFlapping(tree: Tree) = tree match {
-//        case Unbox2box(Box2unbox(_)) => true
-//        case Box2unbox(Unbox2box(_)) => true
-//        case _ => false
-//      }
-//      tree.collect{ case sub if isFlapping(sub) => unit.error(sub.pos, s"unexpected leftovers after coerce: $sub") }
-//    }
-//  }
-//
-//  class TreeAdapters extends Analyzer {
-//    var indent = 0
-//    def adaptdbg(ind: Int, msg: => String): Unit = stagiumlog("  " * ind + msg)
-//
-//    lazy val global: StagiumConvertTreeTransformer.this.global.type = StagiumConvertTreeTransformer.this.global
-//    override def newTyper(context: Context): Typer = new TreeAdapter(context)
-//
-//    def adapt(unit: CompilationUnit): Tree = {
-//      val context = rootContext(unit)
-//      val checker = new TreeAdapter(context)
-//      unit.body = checker.typed(unit.body)
-//      unit.body
-//    }
-//
-//    class TreeAdapter(context0: Context) extends Typer(context0) {
-//      override protected def finishMethodSynthesis(templ: Template, clazz: Symbol, context: Context): Template =
-//        templ
-//
-//      def supertyped(tree: Tree, mode: Mode, pt: Type): Tree =
-//        super.typed(tree, mode, pt)
-//
-//      override protected def adapt(tree: Tree, mode: Mode, pt: Type, original: Tree = EmptyTree): Tree = {
-//        val oldTpe = tree.tpe
-//        val newTpe = pt
-//        def typeMismatch = oldTpe.isStaged ^ newTpe.isStaged
-//        def dontAdapt = tree.isType || pt.isWildcard
-//        if (typeMismatch && !dontAdapt) {
-//          val conversion = if (oldTpe.isStaged) staged2direct else direct2staged
-//          val convertee = if (oldTpe.typeSymbol.isBottomClass) gen.mkAttributedCast(tree, newTpe.toDirect) else tree
-//          val tree1 = atPos(tree.pos)(Apply(gen.mkAttributedRef(conversion), List(convertee)))
-//          val tree2 = super.typed(tree1, mode, pt)
-//          assert(tree2.tpe != ErrorType, tree2)
-//          tree2
-//        } else {
-//          super.adapt(tree, mode, pt, original)
-//        }
-//      }
-//
-//      override def typed(tree: Tree, mode: Mode, pt: Type): Tree = {
-//        val ind = indent
-//        indent += 1
-//        adaptdbg(ind, " <== " + tree + ": " + showRaw(pt, true, true, false, false))
-//
-//        def fallback() = super.typed(tree, mode, pt)
-//        def retypecheck() = super.typed(tree.clearType(), mode, pt)
-//
-//        val res = tree match {
-//          case EmptyTree | TypeTree() =>
-//            fallback()
-//
-//          case _ if tree.tpe == null =>
-//            fallback()
-//
-//          case Select(Staged2Direct(tree, targ), method) =>
-//            println(tree)
-//            val staged = Ident(TermName("__staged"))
-//            val infix  = Select(staged, TermName("infix_" + method))
-//            super.typed(tree)
-//
-//          case _ =>
-//            retypecheck()
-//        }
-//
-//        adaptdbg(ind, " ==> " + res + ": " + res.tpe)
-//        if (res.tpe == ErrorType) adaptdbg(ind, "ERRORS: " + context.errors)
-//        indent -= 1
-//        res
-//      }
-//    }
-//  }
 }

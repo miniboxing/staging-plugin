@@ -46,9 +46,9 @@ trait StagiumInfo {
     }
   }
 
-//  def direct2staged(tree: Tree): Tree = atPos(tree.pos)(Apply(gen.mkAttributedRef(direct2staged), List(tree)) setType tree.tpe.toStaged)
+  def direct2staged(tree: Tree): Tree = atPos(tree.pos)(Apply(gen.mkAttributedRef(direct2staged), List(tree)) setType tree.tpe.toStaged)
+  def staged2direct(tree: Tree): Tree = atPos(tree.pos)(Apply(gen.mkAttributedRef(staged2direct), List(tree)) setType tree.tpe.toDirect)
 //  def direct2staged(sym: Symbol): Tree = direct2staged(gen.mkAttributedRef(sym))
-//  def staged2direct(tree: Tree): Tree = atPos(tree.pos)(Apply(gen.mkAttributedRef(staged2direct), List(tree)) setType tree.tpe.toDirect)
 //  def staged2direct(tree: Tree, x: Symbol): Tree = atPos(tree.pos)(Selectx(staged2direct(tree), x))
 //  def staged2direct(sym: Symbol): Tree = staged2direct(gen.mkAttributedRef(sym))
 //  def staged2direct(sym: Symbol, x: Symbol): Tree = staged2direct(gen.mkAttributedRef(sym), x)

@@ -11,6 +11,7 @@ trait StagiumDefs {
   lazy val StagedClass = rootMirror.getRequiredClass("scala.staged")
 
   lazy val ExpClass = rootMirror.getRequiredClass("stagium.Exp")
+  lazy val ConClass = rootMirror.getRequiredClass("stagium.Con")
 
   // artificially created marker methods
   lazy val staged2direct =
