@@ -3,10 +3,8 @@ package transform
 
 import metadata._
 import verify._
-import inject._
 import coerce._
 import convert._
-import addext._
 
 /** Removes the known problems in the Scala ASTs that cause the plugin
  *  to malfunction. For example: tailcall introduces .asInstancOf-s that

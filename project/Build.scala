@@ -23,6 +23,7 @@ object StagiumBuild extends Build {
     ),
 
     scalacOptions ++= Seq("-feature", "-deprecation", "-unchecked", "-Xlint"),
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
 
     publishArtifact in packageDoc := false,
 
