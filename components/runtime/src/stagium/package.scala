@@ -61,7 +61,7 @@ package stagium {
       case a: Arg[_] => ???
     }
   }
-  case class Con[T](x: T) extends Exp[Double] // Ugly hack until we get type tags
+  case class Con[T: TypeTag](x: T) extends Exp[T]      // Ugly hack until we get type tags
   case class Arg[T: TypeTag](n: String) extends Exp[T] // TODO
   case class Sym[T: TypeTag](id: Int) extends Exp[T]
   abstract class Def[T]

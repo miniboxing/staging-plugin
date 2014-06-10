@@ -46,6 +46,34 @@ trait StagiumInfo {
     }
   }
 
+  object MaybeTypeApply {
+    def unapply(tree: Tree): Option[(Tree, List[Type])] = tree match {
+      case TypeApply(fun, targs)           => Some((fun, targs.map(_.tpe)))
+      case _ if tree.tpe.typeParams == Nil => Some((tree, Nil))
+      case _                               => None
+    }
+
+    def apply(tree: Tree, targs: List[Type]): Tree =
+      if (targs.isEmpty)
+        tree
+        else
+          TypeApply(tree, targs.map(TypeTree(_)))
+  }
+
+  object MaybeApply {
+    def unapply(tree: Tree): Option[(Tree, List[Tree])] = tree match {
+      case Apply(fun, args)             => Some((fun, args))
+      case _ if tree.tpe.paramss == Nil => Some((tree, Nil))
+      case _                            => None
+    }
+
+    def apply(tree: Tree, args: List[Tree]): Tree =
+      if (args.isEmpty)
+        tree
+      else
+        Apply(tree, args)
+  }
+
   def direct2staged(tree: Tree): Tree = atPos(tree.pos)(Apply(gen.mkAttributedRef(direct2staged), List(tree)) setType tree.tpe.toStaged)
   def staged2direct(tree: Tree): Tree = atPos(tree.pos)(Apply(gen.mkAttributedRef(staged2direct), List(tree)) setType tree.tpe.toDirect)
 //  def direct2staged(sym: Symbol): Tree = direct2staged(gen.mkAttributedRef(sym))

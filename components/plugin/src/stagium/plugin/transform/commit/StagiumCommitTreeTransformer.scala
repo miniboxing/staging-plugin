@@ -80,7 +80,7 @@ trait StagiumCommitTreeTransformer {
         tree0 match {
 
           // TODO: TypeApply
-          case Direct2Staged(Apply(Select(Staged2Direct(recv, targ), method0), args), _) =>
+          case Direct2Staged(Apply(MaybeTypeApply(Select(Staged2Direct(recv, targ), method0), tpes), args), _) =>
             val recv1 = transform(recv)
             val staged = Ident(TermName("__staged"))
             val method = TermName("infix_" + method0)
@@ -91,8 +91,8 @@ trait StagiumCommitTreeTransformer {
               case tree =>
                 transform(direct2staged(tree))
             }).map(transform)
-            val infixa = Apply(infixm, List(recv1) ::: args2)
-            val res = localTyper.typedOperator(infixa)
+            val infixa = Apply(MaybeTypeApply(infixm, tpes), List(recv1) ::: args2)
+            val res = localTyper.typed(infixa)
             if (!(res.tpe <:< newTpe))
               unit.error(tree0.pos, "Mismatching types: " + res.tpe + " <:< " + newTpe)
             res
