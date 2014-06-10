@@ -96,7 +96,6 @@ trait StagiumCommitTreeTransformer {
           case Apply(Apply(TypeApply(method, List(tpe)), List(exp)), List(tag, stager)) if method.symbol == unstageInterface =>
             val unstage = gen.mkAttributedIdent(unstageImplment)
             val call = gen.mkMethodCall(gen.mkMethodCall(unstage, List(tpe.tpe), List(transform(exp))), List(tag, stager))
-            println(call)
             val tree2 = localTyper.typed(call)
             tree2
 
