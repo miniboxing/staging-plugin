@@ -56,17 +56,21 @@ trait StagiumCoerceTreeTransformer {
         val oldTpe = tree.tpe
         val newTpe = pt
         def typeMismatch = oldTpe.isStaged ^ newTpe.isStaged
-        def dontAdapt = tree.isType || pt.isWildcard
-        if (typeMismatch && !dontAdapt) {
-          val conversion = if (oldTpe.isStaged) staged2direct else direct2staged
-          val convertee = if (oldTpe.typeSymbol.isBottomClass) gen.mkAttributedCast(tree, newTpe.toDirect) else tree
-          val tree1 = atPos(tree.pos)(Apply(gen.mkAttributedRef(conversion), List(convertee)))
-          val tree2 = super.typed(tree1, mode, pt)
-          assert(tree2.tpe != ErrorType, tree2)
-          tree2
-        } else {
+        if (tree.isTerm) {
+          if (typeMismatch && pt.isWildcard) {
+            val conversion = if (oldTpe.isStaged) staged2direct else direct2staged
+            val convertee = if (oldTpe.typeSymbol.isBottomClass) gen.mkAttributedCast(tree, newTpe.toDirect) else tree
+            val tree1 = atPos(tree.pos)(Apply(gen.mkAttributedRef(conversion), List(convertee)))
+            val tree2 = super.typed(tree1, mode, pt)
+            assert(tree2.tpe != ErrorType, tree2)
+            tree2
+          } else if (!typeMismatch && !(oldTpe <:< newTpe)) {
+            tree.setType(newTpe)
+          } else {
+            super.adapt(tree, mode, pt, original)
+          }
+        } else
           super.adapt(tree, mode, pt, original)
-        }
       }
 
       override def typed(tree: Tree, mode: Mode, pt: Type): Tree = {
