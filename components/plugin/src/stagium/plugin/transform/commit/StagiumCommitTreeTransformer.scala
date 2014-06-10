@@ -19,8 +19,13 @@ trait StagiumCommitTreeTransformer {
     override def transform(tree: Tree): Tree =
       if (helper.flag_passive)
         tree
-      else
-        afterCommit(checkNoStorage(stageTrans.transform(tree)))
+      else {
+        val res = stageTrans.transform(tree)
+        if (!reporter.hasErrors)
+          afterCommit(checkNoStorage(res))
+        else
+          EmptyTree
+      }
   }
 
   def checkNoStorage(tree: Tree) = {
@@ -70,7 +75,6 @@ trait StagiumCommitTreeTransformer {
     override def transform(tree0: Tree): Tree = {
       val oldTpe = tree0.tpe
       val newTpe = deepTransformation(oldTpe)
-//      println(oldTpe + " ==> " + newTpe)
 
       // force new info on the symbol
       if (tree0.hasSymbolField)
@@ -79,19 +83,18 @@ trait StagiumCommitTreeTransformer {
       val tree1 =
         tree0 match {
 
-          // TODO: TypeApply
-          case Direct2Staged(Apply(MaybeTypeApply(Select(Staged2Direct(recv, targ), method0), tpes), args), _) =>
+          case Apply(MaybeTypeApply(Select(Staged2Direct(recv, _), method0), tpes), args) =>
             val recv1 = transform(recv)
             val staged = Ident(TermName("__staged"))
             val method = TermName("infix_" + method0)
             val infixm = Select(staged, method)
             val args2  = args.map((arg: Tree) => arg match {
-              case Staged2Direct(tree, targ) =>
-                tree
+              case Staged2Direct(tree, _) =>
+                transform(tree)
               case tree =>
                 transform(direct2staged(tree))
             }).map(transform)
-            val infixa = Apply(MaybeTypeApply(infixm, tpes), List(recv1) ::: args2)
+            val infixa = Apply(MaybeTypeApply(infixm, tpes.map(deepTransformation)), List(recv1) ::: args2)
             val res = localTyper.typed(infixa)
             if (!(res.tpe <:< newTpe))
               unit.error(tree0.pos, "Mismatching types: " + res.tpe + " <:< " + newTpe)
