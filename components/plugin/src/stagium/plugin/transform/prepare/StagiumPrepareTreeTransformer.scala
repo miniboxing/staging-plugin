@@ -12,6 +12,8 @@ trait StagiumPrepareTreeTransformer {
   import helper._
 
   override def newTransformer(unit: CompilationUnit): Transformer = new Transformer {
+    afterPrepare(direct2staged.info)
+    afterPrepare(staged2direct.info)
     override def transform(tree: Tree) = {
       // [error] /Users/xeno_by/Projects/stagium/tests/correctness/test/stagium/partest/CompileTest.scala:30: [stagium-verify] tree not typed: $anonfun.this.apply$mcV$sp()
       // [error]       Console.withErr(pa) {
@@ -24,9 +26,6 @@ trait StagiumPrepareTreeTransformer {
   }
 
   class TreePreparer(unit: CompilationUnit) extends TypingTransformer(unit) {
-    override def transform(tree: Tree): Tree = tree match {
-      case _ =>
-        super.transform(tree)
-    }
+    override def transform(tree: Tree): Tree = tree
   }
 }
