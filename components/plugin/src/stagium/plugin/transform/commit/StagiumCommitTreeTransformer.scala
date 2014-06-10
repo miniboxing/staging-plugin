@@ -89,6 +89,12 @@ trait StagiumCommitTreeTransformer {
               unit.error(tree0.pos, "Mismatching types: " + con1.tpe + " <:< " + newTpe)
             con1
 
+//          case Staged2Direct(Direct2Staged(tree, _), _) =>
+//            tree
+//
+//          case Direct2Staged(Staged2Direct(tree, _), _) =>
+//            tree
+
           case Staged2Direct(_, _) =>
             unit.error(tree0.pos, "Once in the staged world there's no going back, directly, use `execute` or `function` to go from  " + tree0.tpe + " to " + tree0.tpe.toDirect + " (internal debug: " + tree0 + ")")
             gen.mkAttributedRef(Predef_???)

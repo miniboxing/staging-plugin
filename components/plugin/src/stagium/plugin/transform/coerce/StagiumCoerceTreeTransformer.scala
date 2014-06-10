@@ -89,6 +89,7 @@ trait StagiumCoerceTreeTransformer {
             fallback()
 
           case MaybeApply(MaybeTypeApply(sel @ Select(qual, meth), targs), args) if qual.isTerm && sel.symbol.isMethod =>
+
             val qual2 = super.typedQualifier(qual.setType(null), mode, WildcardType)
 
             // instead of boxing, redirect to recv.meth(...) to __staged.infix_meth(recv, ...)
