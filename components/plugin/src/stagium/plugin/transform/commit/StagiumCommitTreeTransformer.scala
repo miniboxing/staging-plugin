@@ -22,15 +22,16 @@ trait StagiumCommitTreeTransformer {
       else {
         val res = afterCommit(stageTrans.transform(tree))
         if (!reporter.hasErrors)
-          afterCommit(checkNoStorage(res))
+          afterCommit(checkNoStorage(unit, res))
         else
           EmptyTree
       }
   }
 
-  def checkNoStorage(tree: Tree) = {
+  def checkNoStorage(unit: CompilationUnit, tree: Tree) = {
     for (t <- tree)
-      assert(isNotStaged(t.tpe), t + ": " + t.tpe)
+      if(!isNotStaged(t.tpe))
+        unit.error(t.pos, "Incorrect transformation for " + t + " that is typed using @staged past the commit phase: " + t.tpe)
     tree
   }
 
@@ -55,21 +56,6 @@ trait StagiumCommitTreeTransformer {
   case object Boxed extends Constraint
   case object NoConstraint extends Constraint
 
-  class CoercionExtractor {
-    def unapply(tree: Tree, sym: Symbol): Option[(Tree, Type)] = tree match {
-      case Apply(TypeApply(fun, List(targ)), List(inner)) if fun.symbol == sym => Some((inner, targ.tpe))
-      case _ => None
-    }
-  }
-
-  object Staged2Direct extends CoercionExtractor {
-    def unapply(tree: Tree): Option[(Tree, Type)] = unapply(tree, staged2direct)
-  }
-
-  object Direct2Staged extends CoercionExtractor {
-    def unapply(tree: Tree): Option[(Tree, Type)] = unapply(tree, direct2staged)
-  }
-
   class StagiumTreeTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 
     override def transform(tree0: Tree): Tree = {
@@ -82,21 +68,20 @@ trait StagiumCommitTreeTransformer {
 
       val tree1 =
         tree0 match {
-          case Direct2Staged(arg, tpe) =>
+
+          // I know I'm generating some crap in the coerce phase, but I'm just too tired to debug it... :|
+          case Direct2Staged(Staged2Direct(tree)) =>
+            transform(tree)
+
+          case Direct2Staged(arg) =>
             val con0 = gen.mkMethodCall(gen.mkAttributedIdent(ConClass.companionModule), List(transform(arg)))
             val con1 = localTyper.typed(con0)
             if (!(con1.tpe <:< newTpe))
               unit.error(tree0.pos, "Mismatching types: " + con1.tpe + " <:< " + newTpe)
             con1
 
-//          case Staged2Direct(Direct2Staged(tree, _), _) =>
-//            tree
-//
-//          case Direct2Staged(Staged2Direct(tree, _), _) =>
-//            tree
-
-          case Staged2Direct(_, _) =>
-            unit.error(tree0.pos, "Once in the staged world there's no going back, directly, use `execute` or `function` to go from  " + tree0.tpe + " to " + tree0.tpe.toDirect + " (internal debug: " + tree0 + ")")
+          case Staged2Direct(_) =>
+            unit.error(tree0.pos, "Once in the staged world there's no going back, directly, use `execute` or `function` to go from  " + tree0.tpe + " to " + tree0.tpe.toStaged + " (internal debug: " + tree0 + ")")
             gen.mkAttributedRef(Predef_???)
 
           case Apply(Apply(TypeApply(method, List(tpe)), List(exp)), List(tag, stager)) if method.symbol == unstageInterface =>

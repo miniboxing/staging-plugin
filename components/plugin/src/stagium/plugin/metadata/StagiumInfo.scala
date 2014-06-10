@@ -25,14 +25,14 @@ trait StagiumInfo {
     def toDirect = if (tpe.isStaged) tpe.filterAnnotations(_.tpe.typeSymbol != StagedClass) else tpe
   }
 
-  object Unbox2box {
+  object Staged2Direct {
     def unapply(tree: Tree): Option[Tree] = tree match {
       case Apply(_, arg :: Nil) if tree.symbol == staged2direct => Some(arg)
       case _ => None
     }
   }
 
-  object Box2unbox {
+  object Direct2Staged {
     def unapply(tree: Tree): Option[Tree] = tree match {
       case Apply(_, arg :: Nil) if tree.symbol == direct2staged => Some(arg)
       case _ => None

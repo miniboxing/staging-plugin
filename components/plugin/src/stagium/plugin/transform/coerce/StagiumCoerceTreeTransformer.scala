@@ -22,12 +22,12 @@ trait StagiumCoerceTreeTransformer {
       if (!helper.flag_passive) {
         val tree = afterCoerce(new TreeAdapters().adapt(unit))
         tree.foreach(node => if (!node.isInstanceOf[Import] && node.tpe == null) unit.error(node.pos, s"[stagium-coerce] tree not typed: $tree"))
-        def isFlapping(tree: Tree) = tree match {
-          case Unbox2box(Box2unbox(_)) => true
-          case Box2unbox(Unbox2box(_)) => true
-          case _ => false
-        }
-        tree.collect{ case sub if isFlapping(sub) => unit.error(sub.pos, s"unexpected leftovers after coerce: $sub") }
+//        def isFlapping(tree: Tree) = tree match {
+//          case Staged2Direct(Direct2Staged(_)) => true
+//          case Direct2Staged(Staged2Direct(_)) => true
+//          case _ => false
+//        }
+//        tree.collect{ case sub if isFlapping(sub) => unit.error(sub.pos, s"unexpected leftovers after coerce: $sub") }
       }
   }
 
