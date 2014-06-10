@@ -53,11 +53,11 @@ trait StagiumCoerceTreeTransformer {
         super.typed(tree, mode, pt)
 
       override protected def adapt(tree: Tree, mode: Mode, pt: Type, original: Tree = EmptyTree): Tree = {
-        val oldTpe = tree.tpe
+        val oldTpe = tree.tpe.finalResultType
         val newTpe = pt
         def typeMismatch = oldTpe.isStaged ^ newTpe.isStaged
         if (tree.isTerm) {
-          if (typeMismatch && pt.isWildcard) {
+          if (typeMismatch && !pt.isWildcard) {
             val conversion = if (oldTpe.isStaged) staged2direct else direct2staged
             val convertee = if (oldTpe.typeSymbol.isBottomClass) gen.mkAttributedCast(tree, newTpe.toDirect) else tree
             val tree1 = atPos(tree.pos)(Apply(gen.mkAttributedRef(conversion), List(convertee)))
@@ -88,16 +88,23 @@ trait StagiumCoerceTreeTransformer {
           case _ if tree.tpe == null =>
             fallback()
 
-          case Select(qual, meth) if qual.isTerm && tree.symbol.isMethod =>
-            val qual2 = super.typed(qual.clearType(), mode | QUALmode, WildcardType)
+          case MaybeApply(MaybeTypeApply(sel @ Select(qual, meth), targs), args) if qual.isTerm && sel.symbol.isMethod =>
+            val qual2 = super.typedQualifier(qual.setType(null), mode, WildcardType)
+
+            // instead of boxing, redirect to recv.meth(...) to __staged.infix_meth(recv, ...)
             if (qual2.isStaged) {
-              val tpe2 = if (qual2.tpe.hasAnnotation(StagedClass)) qual2.tpe else qual2.tpe.widen
-              val tpe3 = tpe2.toDirect
-              val qual3 = super.typed(qual.clearType(), mode, tpe3)
-              super.typed(Select(qual3, meth) setSymbol tree.symbol, mode, pt)
+              val staged = Ident(TermName("__staged"))
+              val method = TermName("infix_" + meth)
+              val infixm = Select(staged, method)
+              val infixa = Apply(MaybeTypeApply(infixm, targs), qual2 :: args)
+              super.typed(infixa, mode, pt)
             } else {
               retypecheck()
             }
+
+          case _: DefTree if tree.hasSymbolField && tree.symbol.name.toString == "__staged" && tree.symbol.isTerm =>
+            // hands off the staging object!
+            tree
 
           case _ =>
             retypecheck()

@@ -82,30 +82,7 @@ trait StagiumCommitTreeTransformer {
 
       val tree1 =
         tree0 match {
-
-          case Apply(MaybeTypeApply(Select(Staged2Direct(recv, _), method0), tpes), args) =>
-            val recv1 = transform(recv)
-            val staged = Ident(TermName("__staged"))
-            val method = TermName("infix_" + method0)
-            val infixm = Select(staged, method)
-            val args2  = args.map((arg: Tree) => arg match {
-              case Staged2Direct(tree, _) =>
-                transform(tree)
-              case tree =>
-                transform(direct2staged(tree))
-            }).map(transform)
-            val infixa = Apply(MaybeTypeApply(infixm, tpes.map(deepTransformation)), List(recv1) ::: args2)
-            val res = localTyper.typed(infixa)
-            if (!(res.tpe <:< newTpe))
-              unit.error(tree0.pos, "Mismatching types: " + res.tpe + " <:< " + newTpe)
-            res
-            //transform(tree)
-
           case Direct2Staged(arg, tpe) =>
-//          I have trouble creating the tag, so for now I hardcoded stagium.Con to be of type Double :)
-//            val universe = localTyper.typedOperator(Select(Select(Select(Ident(TermName("scala")),TermName("reflect")),TermName("runtime")), TermName("universe")))
-//            val mirror = EmptyTree
-//            val tag = scala.reflect.reify.reifyType(global)(typer, universe, mirror, tpe, true)
             val con0 = gen.mkMethodCall(gen.mkAttributedIdent(ConClass.companionModule), List(transform(arg)))
             val con1 = localTyper.typed(con0)
             if (!(con1.tpe <:< newTpe))
@@ -113,8 +90,8 @@ trait StagiumCommitTreeTransformer {
             con1
 
           case Staged2Direct(_, _) =>
-            unit.error(tree0.pos, "There's no going back: " + tree0)
-            tree0
+            unit.error(tree0.pos, "Once in the staged world there's no going back, directly, use `execute` or `function` to go from  " + tree0.tpe + " to " + tree0.tpe.toDirect + " (internal debug: " + tree0 + ")")
+            gen.mkAttributedRef(Predef_???)
 
           case Apply(Apply(TypeApply(method, List(tpe)), List(exp)), List(tag, stager)) if method.symbol == unstageInterface =>
             val unstage = gen.mkAttributedIdent(unstageImplment)
