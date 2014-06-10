@@ -1,5 +1,6 @@
-staging-plugin
-==============
+<img src="http://scala-miniboxing.org/mbox2-thumbnail.png" alt="Miniboxing Logo" align="right">
+
+#Staging plugin [![Build Status](https://travis-ci.org/miniboxing/staging-plugin.svg?branch=master)](https://travis-ci.org/miniboxing/staging-plugin) 
 
 Project Stagium (super-alpha)
 ```
