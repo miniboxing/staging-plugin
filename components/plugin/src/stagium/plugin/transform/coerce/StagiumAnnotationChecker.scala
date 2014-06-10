@@ -23,11 +23,23 @@ trait StagiumAnnotationCheckers {
       }
     }
 
-    override def annotationsLub(tp: Type, ts: List[Type]): Type =
+    override def adaptBoundsToAnnotations(bounds: List[TypeBounds], tparams: List[Symbol], targs: List[Type]): List[TypeBounds] = {
+      println()
+      println("adaptBounds: " + bounds)
+      println(tparams)
+      println(targs)
+      bounds
+    }
+
+    override def annotationsLub(tp: Type, ts: List[Type]): Type = {
+      println()
+      println("lub: " + tp + " from " + ts)
+      ???
       if (ts.exists(_.isStaged))
         tp.toStaged
       else
         tp.toDirect
+    }
 
     override def annotationsGlb(tp: Type, ts: List[Type]): Type =
       annotationsLub(tp, ts)
