@@ -19,7 +19,7 @@ then
   exit 1
 fi
 
-SCALA_VERSION=2.11.0-RC1
+SCALA_VERSION=2.11
 STAGIUM_VERSION=0.1-SNAPSHOT
 PLUGIN_JAR=$STAGIUM_PATH/components/plugin/target/scala-$SCALA_VERSION/stagium-plugin_$SCALA_VERSION-$STAGIUM_VERSION.jar
 RUNTIME_JAR=$STAGIUM_PATH/components/runtime/target/scala-$SCALA_VERSION/stagium-runtime_$SCALA_VERSION-$STAGIUM_VERSION.jar

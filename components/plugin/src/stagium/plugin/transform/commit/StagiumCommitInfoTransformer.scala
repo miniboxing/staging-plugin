@@ -1,11 +1,11 @@
 package stagium.plugin
 package transform
-package convert
+package commit
 
 import scala.tools.nsc.transform.InfoTransform
 
-trait StagiumConvertInfoTransformer extends InfoTransform {
-  self: StagiumConvertPhase =>
+trait StagiumCommitInfoTransformer extends InfoTransform {
+  self: StagiumCommitPhase =>
 
   import global._
   import definitions._

@@ -2,10 +2,9 @@ package stagium.plugin
 package transform
 
 import metadata._
-
 import prepare._
 import coerce._
-import convert._
+import commit._
 
 /** Removes the known problems in the Scala ASTs that cause the plugin
  *  to malfunction. For example: tailcall introduces .asInstancOf-s that
@@ -26,7 +25,7 @@ trait StagiumPreparePhase extends
       // [error]                           ^
       // [error] one error found
       // TODO: I've no idea why this happens - looks like an invalid tree produced by scalac
-      tree.foreach(tree => if (tree.tpe == null && !tree.toString.contains("apply$mcV$sp")) unit.error(tree.pos, s"[stagium-verify] tree not typed: $tree"))
+      tree.foreach(tree => if (tree.tpe == null && !tree.toString.contains("apply$mcV$sp") && !tree.isInstanceOf[Import]) unit.error(tree.pos, s"[stagium-verify] tree not typed: $tree"))
       new TreePreparer(unit).transform(tree)
     }
   }
@@ -44,13 +43,13 @@ trait StagiumCoercePhase extends
 }
 
 /** Representation conversion phase `C @value -> fields` */
-trait StagiumConvertPhase extends
+trait StagiumCommitPhase extends
     StagiumPluginComponent
-    with StagiumConvertInfoTransformer
-    with StagiumConvertTreeTransformer { self =>
+    with StagiumCommitInfoTransformer
+    with StagiumCommitTreeTransformer { self =>
   import global._
   import helper._
-  def stagiumConvertPhase: StdPhase
-  def afterConvert[T](op: => T): T = global.exitingPhase(stagiumConvertPhase)(op)
-  def beforeConvert[T](op: => T): T = global.enteringPhase(stagiumConvertPhase)(op)
+  def stagiumCommitPhase: StdPhase
+  def afterCommit[T](op: => T): T = global.exitingPhase(stagiumCommitPhase)(op)
+  def beforeCommit[T](op: => T): T = global.enteringPhase(stagiumCommitPhase)(op)
 }

@@ -1,12 +1,12 @@
 package stagium.plugin
 package transform
-package convert
+package commit
 
 import scala.tools.nsc.typechecker.Analyzer
 import scala.reflect.internal.Mode
 
-trait StagiumConvertTreeTransformer {
-  this: StagiumConvertPhase =>
+trait StagiumCommitTreeTransformer {
+  this: StagiumCommitPhase =>
 
   import global._
   import definitions._
@@ -20,7 +20,7 @@ trait StagiumConvertTreeTransformer {
       if (helper.flag_passive)
         tree
       else
-        afterConvert(checkNoStorage(stageTrans.transform(tree)))
+        afterCommit(checkNoStorage(stageTrans.transform(tree)))
   }
 
   def checkNoStorage(tree: Tree) = {
@@ -113,9 +113,9 @@ trait StagiumConvertTreeTransformer {
             unit.error(tree0.pos, "There's no going back: " + tree0)
             tree0
 
-          case Apply(TypeApply(method, List(tpe)), List(exp, tag, stager)) if method.symbol == unstageInterface =>
+          case Apply(Apply(TypeApply(method, List(tpe)), List(exp)), List(tag, stager)) if method.symbol == unstageInterface =>
             val unstage = gen.mkAttributedIdent(unstageImplment)
-            val call = gen.mkMethodCall(unstage, List(tpe.tpe), List(transform(exp), tag, stager))
+            val call = gen.mkMethodCall(gen.mkMethodCall(unstage, List(tpe.tpe), List(transform(exp))), List(tag, stager))
             val tree2 = localTyper.typed(call)
             tree2
 
