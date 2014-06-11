@@ -82,8 +82,21 @@ object StagiumBuild extends Build {
     )
   )
 
-  lazy val stagium      = Project(id = "stagium",         base = file("."),                      settings = defaults) aggregate (runtime, plugin, tests)
+  val scalameterDeps = {
+    val scalaMeter  = Seq("com.github.axel22" %% "scalameter" % "0.5-M2")
+    val scalaMeterFramework = new TestFramework("org.scalameter.ScalaMeterFramework")
+    Seq(
+      libraryDependencies ++= scalaMeter,
+      testFrameworks += scalaMeterFramework,
+      // this generates untyped trees, which prevent the
+      // valium plugin from transforming the code
+      scalacOptions in Compile += "-no-specialization"
+    )
+  }
+
+  lazy val stagium     = Project(id = "stagium",         base = file("."),                      settings = defaults) aggregate (runtime, plugin, tests, bench)
   lazy val runtime     = Project(id = "stagium-runtime", base = file("components/runtime"),     settings = defaults)
   lazy val plugin      = Project(id = "stagium-plugin",  base = file("components/plugin"),      settings = defaults ++ pluginDeps) dependsOn(runtime)
   lazy val tests       = Project(id = "stagium-tests",   base = file("tests/correctness"),      settings = defaults ++ pluginDeps ++ partestLikeDeps) dependsOn(plugin, runtime)
+  lazy val bench       = Project(id = "stagium-bench",   base = file("tests/benchmarks"),       settings = defaults ++ pluginDeps ++ testsDeps ++ scalameterDeps) dependsOn(plugin, runtime)
 }
