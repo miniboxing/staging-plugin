@@ -5,10 +5,11 @@
 //
 // original URL: http://rosettacode.org/wiki/Fast_Fourier_transform#Scala
 //
-package stagium.bench.complex.fft
+package stagium
+package examples
+package fft
 
 import scala.math.{ Pi, cos, sin, cosh, sinh, abs }
-import stagium._
 import scala.reflect.runtime.universe._
 
 case class Complex(re: Double, im: Double) {

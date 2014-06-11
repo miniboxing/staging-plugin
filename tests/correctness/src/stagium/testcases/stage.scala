@@ -1,4 +1,6 @@
-import stagium._
+package stagium
+package examples
+
 import scala.reflect.runtime.universe._
 
 object Test {

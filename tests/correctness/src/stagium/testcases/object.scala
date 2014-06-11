@@ -1,7 +1,5 @@
-package valium.tests.ex1
-
-import stagium._
-import scala.reflect.runtime.universe._
+package stagium
+package examples
 
 class Hello {
   def +(hello: Hello) = hello
