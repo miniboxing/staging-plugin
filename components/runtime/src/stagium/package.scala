@@ -43,8 +43,8 @@ package object stagium {
     x match {
       case Def(f: Fun[_]) =>
         append(s"  val $x: ${x.tpeString} =")
-        append(s"   ${f.argsToString} =>", nl = false)
-        append(codeFor(f.expr, indent + 1))
+        append(s"    ${f.argsToString} =>", nl = false)
+        append(codeFor(f.expr, indent + 2))
       case _ =>
         for (sym <- utils.schedule(x)) {
           sym match {
@@ -56,7 +56,7 @@ package object stagium {
         }
     }
     append("  " + x + ": " + x.tpeString)
-    append("}")
+    append("}", nl = false)
     sb.toString
   }
 
@@ -65,7 +65,17 @@ package object stagium {
     println("*********************************")
     println(codeFor(x, 0))
     println("*********************************")
-    null.asInstanceOf[T]
+    // unfortunately at this point we don't have the code
+    // to run and compile the program, therefore we need to
+    // return a value:
+    (x match {
+      case Con(x)                          => x
+      case Def(_: Fun1[_,_])               => ((_: AnyRef) => { println("<function1 called>"); null })
+      case Def(_: Fun2[_,_,_])             => ((_: AnyRef,_: AnyRef) => { println("<function2 called>"); null })
+      case Def(_: Fun4[_,_,_,_,_])         => ((_: AnyRef,_: AnyRef,_: AnyRef,_: AnyRef) => { println("<function4 called>"); null })
+      case Def(_: Fun8[_,_,_,_,_,_,_,_,_]) => ((_: AnyRef,_: AnyRef,_: AnyRef,_: AnyRef,_: AnyRef,_: AnyRef,_: AnyRef,_: AnyRef) => { println("<function8 called>"); null })
+      case Sym(_)                          => null
+    }).asInstanceOf[T]
   }
 }
 
