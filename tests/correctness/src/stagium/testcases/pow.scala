@@ -4,6 +4,7 @@ package pow
 
 import scala.reflect.runtime.universe._
 
+// A test for the power function
 object Test {
   def main(args: Array[String]): Unit = {
 
@@ -35,7 +36,7 @@ object __staged {
     (r, oth) match {
       case (Con(1), _) => oth
       case (_, Con(1)) => r
-      case _ => addDef(DoubleTimes(r, oth))
+      case _ => DoubleTimes(r, oth)
     }
 }
 

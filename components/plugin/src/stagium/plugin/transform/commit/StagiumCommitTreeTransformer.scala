@@ -78,7 +78,7 @@ trait StagiumCommitTreeTransformer {
             val con0 = gen.mkMethodCall(gen.mkAttributedIdent(ConClass.companionModule), List(transform(arg)))
             val con1 = localTyper.typed(con0)
             if (!(con1.tpe <:< newTpe))
-              unit.error(tree0.pos, "Mismatching types: " + con1.tpe + " <:< " + newTpe)
+              unit.error(tree0.pos, "Impossible to convert: " + con1.tpe + " to " + newTpe + " (internal tree: " + tree0 + ")")
             con1
 
           // going from staged to direct => no, no, that doesn't work

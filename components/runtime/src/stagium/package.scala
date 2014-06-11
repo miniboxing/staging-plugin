@@ -37,5 +37,8 @@ package object stagium {
 
   // artifact necessary to have definitions automatically assigned symbols
   implicit def addDef[T: TypeTag](d: Def[T]): Sym[T] = internal.addDefInternal[T](d)
+
+  // useful for extracting definitions
+  val Def = internal.Def
 }
 

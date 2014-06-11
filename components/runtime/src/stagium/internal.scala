@@ -29,9 +29,16 @@ object internal {
   }
 
   def addDefInternal[T: TypeTag](d: Def[T]): Sym[T] = {
-    val sym = Sym[T](sidx)
-    defs += sym -> d
-    sidx += 1
-    sym
+    if (cse && defs.valuesIterator.contains(d)) {
+      defs.find(_._2 == d).get._1.asInstanceOf[Sym[T]]
+    } else {
+      val sym = Sym[T](sidx)
+      defs += sym -> d
+      sidx += 1
+      sym
+    }
   }
+
+  private[this] var cse = false
+  def enableCommonSubexpressionElimination(): Unit = { cse = true }
 }

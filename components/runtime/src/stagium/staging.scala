@@ -31,13 +31,16 @@ object staging {
     val sb = new StringBuffer()
     def append(s: String, nl: Boolean = true) = sb.append("  " * indent + s + (if (nl) "\n" else ""))
     append("{")
+    var end = ""
     x match {
       case Def(f: Fun[_]) =>
         append(s"  val $x: ${x.tpeString} =")
         append(s"    ${f.argsToString} =>", nl = false)
         append(codeFor(f.expr, indent + 2))
+        end = "end of function " + x + ": " + x.tpeString
       case _ =>
-        for (sym <- schedule(x)) {
+        val sched = schedule(x)
+        for (sym <- sched) {
           sym match {
             case s: Sym[_] =>
               append(s"  val $s: ${s.tpeString} = ${defs(s)}")
@@ -45,9 +48,10 @@ object staging {
               append(other.toString)
           }
         }
+        end = "end of code block of " + sched.length + " instructions"
     }
     append("  " + x + ": " + x.tpeString)
-    append("}", nl = false)
+    append("} // " + end)
     sb.toString
   }
 

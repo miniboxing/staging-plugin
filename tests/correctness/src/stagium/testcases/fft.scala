@@ -19,16 +19,7 @@ case class Complex(re: Double, im: Double) {
     def *(x: Complex): Complex = Complex(re * x.re - im * x.im, re * x.im + im * x.re)
     def /(x: Double):  Complex = Complex(re / x, im / x)
 
-    override def toString(): String = {
-        val a = "%1.3f" format re
-        val b = "%1.3f" format abs(im)
-        (a,b) match {
-            case (_, "0.000") => a
-            case ("0.000", _) => b + "i"
-            case (_, _) if im > 0 => a + " + " + b + "i"
-            case (_, _) => a + " - " + b + "i"
-        }
-    }
+    override def toString(): String = s"stagium.examples.fft.Complex($re, $im)"
     def exp: Complex = Complex.exp(this)
 }
 
@@ -39,7 +30,7 @@ object Complex {
   }
 }
 
-// annotations need to be added since the type inference does not kick in properly
+// annotations need to be added since the type inference does not kick in properly when annotations are present
 // see https://groups.google.com/forum/#!topic/scala-internals/-hp79CrjQPo for more details
 object FFT {
   def _fft(cSeq: Seq[Complex @staged], direction: Complex @staged, scalar: Int @staged): Seq[Complex @staged] = {
@@ -70,10 +61,25 @@ object FFT {
   def rfft(cSeq: Seq[Complex @staged]): Seq[Complex @staged] = _fft(cSeq, Complex(0, -2), 2)
 }
 
-//
+// Test for staging
+object Test {
+  def main(args: Array[String]): Unit = {
+    import FFT._
+
+    val fun = function8((e1: Complex @staged, e2: Complex @staged, e3: Complex @staged, e4: Complex @staged, e5: Complex @staged, e6: Complex @staged, e7: Complex @staged, e8: Complex @staged) =>
+                rfft(fft(Seq[Complex @staged](e1, e2, e3, e4, e5, e6, e7, e8)))(0))
+
+    val c = Complex(1.0, 1.0)
+    fun(c,c,c,c,c,c,c,c)
+  }
+}
+
+
 // This is the support object for staging
-//
+// here we defined how to stage the operations for Complex numbers
 object __staged {
+  case class Re(c: Exp[Complex])  extends Def[Double]  { override def toString = s"$c.re" }
+  case class Im(c: Exp[Complex])  extends Def[Double]  { override def toString = s"$c.im" }
   case class Add[T: TypeTag, U: TypeTag](t1: Exp[T], t2: Exp[U]) extends Def[T] { override def toString = t1 + " + " + t2 }
   case class Sub[T: TypeTag, U: TypeTag](t1: Exp[T], t2: Exp[U]) extends Def[T] { override def toString = t1 + " - " + t2 }
   case class Mul[T: TypeTag, U: TypeTag](t1: Exp[T], t2: Exp[U]) extends Def[T] { override def toString = t1 + " * " + t2 }
@@ -81,34 +87,48 @@ object __staged {
   case class E_^(c: Exp[Complex]) extends Def[Complex] { override def toString = "stagium.bench.complex.fft.Complex.exp(" + c + ")" }
   case class ToD(i: Exp[Int])     extends Def[Double]  { override def toString = i + ".toDouble" }
 
+  def infix_re(c: Exp[Complex]): Exp[Double] =
+    c match {
+      case _ => Re(c)
+    }
+
+  def infix_im(c: Exp[Complex]): Exp[Double] =
+    c match {
+      case _ => Im(c)
+    }
+
   def infix_+(t1: Exp[Complex], t2: Exp[Complex]): Exp[Complex] =
     (t1, t2) match {
-      case _ => addDef(Add(t1, t2))
+      case _ => Add(t1, t2)
     }
 
   def infix_-(t1: Exp[Complex], t2: Exp[Complex]): Exp[Complex] =
     (t1, t2) match {
-      case _ => addDef(Sub(t1, t2))
+      case _ => Sub(t1, t2)
     }
 
   def infix_*(t1: Exp[Complex], t2: Exp[Complex]): Exp[Complex] =
     (t1, t2) match {
-      case _ => addDef(Mul(t1, t2))
+      case _ => Mul(t1, t2)
     }
 
   def infix_**(t1: Exp[Complex], t2: Exp[Double]): Exp[Complex] =
     (t1, t2) match {
-      case _ => addDef(Mul(t1, t2))
+      case _ => Mul(t1, t2)
     }
 
   def infix_/(t1: Exp[Complex], t2: Exp[Double]): Exp[Complex] =
     (t1, t2) match {
-      case _ => addDef(Div(t1, t2))
+      case _ => Div(t1, t2)
     }
 
   def infix_exp(c: Exp[Complex]): Exp[Complex] =
-    addDef(E_^(c))
+    c match {
+      case _ => E_^(c)
+    }
 
   def infix_toDouble(i: Exp[Int]): Exp[Double] =
-    addDef(ToD(i))
+    i match {
+      case _ => ToD(i)
+    }
 }
