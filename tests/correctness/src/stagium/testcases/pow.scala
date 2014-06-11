@@ -1,5 +1,6 @@
 package stagium
 package examples
+package pow
 
 import scala.reflect.runtime.universe._
 
@@ -17,6 +18,8 @@ object Test {
 
     // and this is what we stage
     println("Result: " + execute(pow(3, 5)))
+//    val fun = function[Double](e => pow(e, 5))
+//    println("Function: " + fun(3))
   }
 }
 
@@ -26,7 +29,7 @@ object __staged {
   case class DoubleTimes(t1: Exp[Double], t2: Exp[Double]) extends Def[Double] {
     override def toString = t1 + " * " + t2
   }
-  def infix_*(r: Exp[Double], oth: Exp[Double]): Exp[Double] = 
+  def infix_*(r: Exp[Double], oth: Exp[Double]): Exp[Double] =
     (r, oth) match {
       case (Con(1), _) => oth
       case (_, Con(1)) => r

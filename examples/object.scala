@@ -1,1 +1,0 @@
-../tests/correctness/src/stagium/testcases/object.scala

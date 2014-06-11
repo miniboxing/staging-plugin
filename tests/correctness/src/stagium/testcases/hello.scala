@@ -1,17 +1,16 @@
 package stagium
 package examples
+package hello
 
 class Hello {
   def +(hello: Hello) = hello
 }
 
 object Test {
-
   def boo(hello: Hello @staged): Hello @staged = {
     hello + hello
   }
 }
-
 
 // This is the support object for staging
 object __staged {
