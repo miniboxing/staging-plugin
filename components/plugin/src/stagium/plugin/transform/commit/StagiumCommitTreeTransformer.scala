@@ -69,10 +69,11 @@ trait StagiumCommitTreeTransformer {
       val tree1 =
         tree0 match {
 
-          // I know I'm generating some crap in the coerce phase, but I'm just too tired to debug it... :|
+          // debug: I know I'm generating some redundant coercions, but I'm just too tired to debug it... :|
           case Direct2Staged(Staged2Direct(tree)) =>
             transform(tree)
 
+          // going from staged to direct => make this a staging-time constant
           case Direct2Staged(arg) =>
             val con0 = gen.mkMethodCall(gen.mkAttributedIdent(ConClass.companionModule), List(transform(arg)))
             val con1 = localTyper.typed(con0)
@@ -80,13 +81,22 @@ trait StagiumCommitTreeTransformer {
               unit.error(tree0.pos, "Mismatching types: " + con1.tpe + " <:< " + newTpe)
             con1
 
+          // going from staged to direct => no, no, that doesn't work
           case Staged2Direct(_) =>
-            unit.error(tree0.pos, "Once in the staged world there's no going back, directly, use `execute` or `function` to go from  " + tree0.tpe + " to " + tree0.tpe.toStaged + " (internal debug: " + tree0 + ")")
+            unit.error(tree0.pos, "Once in the staged world there's no going back, directly, use `execute` or `functionN` to go from  " + tree0.tpe + " to " + tree0.tpe.toStaged + " (internal debug: " + tree0 + ")")
             gen.mkAttributedRef(Predef_???)
 
-          case Apply(Apply(TypeApply(method, List(tpe)), List(exp)), List(tag, stager)) if method.symbol == unstageInterface =>
-            val unstage = gen.mkAttributedIdent(unstageImplment)
-            val call = gen.mkMethodCall(gen.mkMethodCall(unstage, List(tpe.tpe), List(transform(exp))), List(tag, stager))
+          // execute => execute_impl
+          case Apply(Apply(TypeApply(method, List(tpe)), List(exp)), List(tag)) if method.symbol == executeInterface =>
+            val unstage = gen.mkAttributedIdent(executeImplement)
+            val call = gen.mkMethodCall(gen.mkMethodCall(unstage, List(tpe.tpe), List(transform(exp))), List(tag))
+            val tree2 = localTyper.typed(call)
+            tree2
+
+          // functionN => functionN_impl
+          case Apply(Apply(TypeApply(method, tpes), List(exp)), tags) if functionInterfaces contains method.symbol =>
+            val unstage = gen.mkAttributedIdent(functionImplements(method.symbol))
+            val call = gen.mkMethodCall(gen.mkMethodCall(unstage, tpes.map(_.tpe), List(transform(exp))), tags)
             val tree2 = localTyper.typed(call)
             tree2
 

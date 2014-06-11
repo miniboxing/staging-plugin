@@ -18,8 +18,9 @@ object Test {
 
     // and this is what we stage
     println("Result: " + execute(pow(3, 5)))
-//    val fun = function[Double](e => pow(e, 5))
-//    println("Function: " + fun(3))
+    val fun1 = function1[Double, Double](e => pow(e, 5))
+    val fun2 = function2[Double, Double, Double]((e1, e2) => pow(e1, 5) * pow(e2, 5))
+    // println("Function: " + fun1(3))
   }
 }
 
