@@ -2,7 +2,7 @@
 
 #Staging plugin [![Build Status](https://travis-ci.org/miniboxing/staging-plugin.svg?branch=master)](https://travis-ci.org/miniboxing/staging-plugin) 
 
-Project Stagium (super-alpha)
+Project Stagium (super-alpha) -- [**more info on the wiki**](https://github.com/miniboxing/staging-plugin/wiki)
 ```
 sun@sun-laptop:/mnt/data-local/Work/Workspace/dev-2.11/staging-plugin/examples(master)$ cat stage.scala 
 import stagium._
