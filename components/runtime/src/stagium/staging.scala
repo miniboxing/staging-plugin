@@ -59,6 +59,8 @@ object staging {
   def schedule(x: Exp[_]): List[Exp[_]] = {
     val start = x
     val deps: mutable.Map[Sym[_], Set[Exp[_]]] = mutable.Map()
+    if (!x.isInstanceOf[Sym[_]])
+      return List()
 
     def transitive_closure(start: Set[Exp[_]]): Set[Exp[_]] = {
       val trans = start ++ start.flatMap { x => x match {
